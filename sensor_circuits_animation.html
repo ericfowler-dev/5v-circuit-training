@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5V Sensor Circuits — 2-Wire & 3-Wire</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #121828;
+    --panel-2: #0f1422;
+    --grid: #1a2033;
+    --wire: #6b7896;
+    --wire-dead: #252d3e;
+    --flow: #4da6ff;
+    --flow-glow: #4da6ff66;
+    --voltage: #ffd166;
+    --voltage-glow: #ffd16655;
+    --green: #3ddc84;
+    --red: #ff4d5e;
+    --red-glow: #ff4d5e66;
+    --cyan: #5eead4;
+    --purple: #b47bff;
+    --text: #e6ecf5;
+    --text-dim: #8895aa;
+    --text-faint: #556074;
+    --accent: #4da6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 10%, #1a2440 0%, transparent 45%),
+      radial-gradient(circle at 80% 90%, #1a2a3a 0%, transparent 45%);
+  }
+  header {
+    padding: 28px 32px 12px;
+    border-bottom: 1px solid var(--grid);
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  h1 span {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-weight: 500;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-top: 4px;
+    max-width: 900px;
+  }
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px 32px;
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+  @media (max-width: 1200px) {
+    .container { grid-template-columns: 1fr; }
+  }
+  .circuit-card {
+    background: var(--panel);
+    border: 1px solid var(--grid);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .circuit-card.faulted {
+    border-color: var(--red);
+    box-shadow: 0 0 0 1px var(--red-glow), 0 0 24px var(--red-glow);
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--grid);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .card-title .tag {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: #4da6ff22;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 500;
+    border: 1px solid #4da6ff44;
+  }
+  .state-badge {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    background: #4da6ff22;
+    color: var(--accent);
+    border: 1px solid #4da6ff44;
+  }
+  svg { display: block; width: 100%; height: auto; background: var(--panel-2); }
+  .controls {
+    padding: 16px 20px;
+    border-top: 1px solid var(--grid);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 200px;
+  }
+  .slider-group label {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+  }
+  .slider-group label b { color: var(--accent); font-weight: 600; }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    height: 4px;
+  }
+  .readout {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .readout b { color: var(--text); font-weight: 500; }
+  .readout b.sig { color: var(--green); }
+  .explain {
+    padding: 16px 20px;
+    background: var(--panel-2);
+    border-top: 1px solid var(--grid);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  .explain strong { color: var(--text); font-weight: 600; }
+  .fault-callout {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #ff4d5e15;
+    border-left: 3px solid var(--red);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 13px;
+    display: none;
+  }
+  .fault-callout.show { display: block; }
+  .fault-callout strong { color: var(--red); }
+
+  /* ========== WIRES ========== */
+  .wire { stroke: var(--wire); stroke-width: 2; fill: none; stroke-linecap: square; transition: opacity 0.2s, stroke 0.2s; }
+
+  /* Forward direction flow (dashes move in the natural stroke direction) */
+  .wire.active-fwd {
+    stroke: var(--flow);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 3px var(--flow-glow));
+    stroke-dasharray: 8 10;
+    animation: flowFwd 1.2s linear infinite;
+  }
+  /* Reverse direction flow */
+  .wire.active-rev {
+    stroke: var(--flow);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 3px var(--flow-glow));
+    stroke-dasharray: 8 10;
+    animation: flowRev 1.2s linear infinite;
+  }
+  .wire.voltage {
+    stroke: var(--voltage);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px var(--voltage-glow));
+    stroke-dasharray: none;
+    opacity: 0.95;
+  }
+  .wire.sense {
+    stroke: var(--cyan);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 3px #5eead466);
+    stroke-dasharray: 3 8;
+    animation: sensePulse 1.8s linear infinite;
+  }
+  .wire.dead { stroke: var(--wire-dead) !important; opacity: 0.5 !important; animation: none !important; filter: none !important; stroke-dasharray: none !important; }
+  @keyframes flowFwd { to { stroke-dashoffset: -18; } }
+  @keyframes flowRev { to { stroke-dashoffset: 18; } }
+  @keyframes sensePulse { to { stroke-dashoffset: -11; } }
+
+  /* Flow arrowheads */
+  .flow-arrow {
+    fill: var(--flow);
+    filter: drop-shadow(0 0 4px var(--flow-glow));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .flow-arrow.show {
+    opacity: 1;
+    animation: arrowPulse 1.2s ease-in-out infinite;
+  }
+  .flow-arrow.sense {
+    fill: var(--cyan);
+    filter: drop-shadow(0 0 4px #5eead466);
+  }
+  @keyframes arrowPulse {
+    0%, 100% { opacity: 0.95; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Fault markers */
+  .fault-marker { opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .fault-marker.show { opacity: 1; }
+  .fault-x-bg { fill: var(--panel-2); }
+  .fault-x-ring { fill: none; stroke: var(--red); stroke-width: 2.5; filter: drop-shadow(0 0 8px var(--red-glow)); animation: pulse 1.2s ease-in-out infinite; }
+  .fault-x-line { stroke: var(--red); stroke-width: 3; stroke-linecap: round; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .fault-label {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    fill: var(--red);
+    text-anchor: middle;
+  }
+  .short-marker { opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .short-marker.show { opacity: 1; }
+  .short-bolt {
+    fill: var(--red);
+    filter: drop-shadow(0 0 6px var(--red-glow));
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  /* Schematic text */
+  .sch-label { font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif; font-size: 13px; fill: var(--text); }
+  .sch-label-sm { font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: var(--text); }
+  .sch-wire-label { font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif; font-size: 12px; fill: var(--text-dim); font-style: italic; }
+  .sch-pin-num { font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif; font-size: 13px; fill: var(--text); font-weight: 600; text-anchor: middle; }
+  .sch-component-label { font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif; font-size: 14px; fill: var(--text); font-weight: 600; }
+  .box-fill { fill: var(--panel); stroke: var(--text); stroke-width: 1.5; }
+
+  /* Readout boxes - bigger */
+  .readout-box-bg { fill: #0a0e1a; stroke: var(--accent); stroke-width: 2; }
+  .readout-box-bg.fault-highlight {
+    fill: #2a0f18;
+    stroke: var(--red);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 14px var(--red-glow));
+    animation: faultReadoutPulse 1.1s ease-in-out infinite;
+  }
+  .readout-label {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    fill: var(--text-dim);
+    text-anchor: middle;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .readout-value {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 22px;
+    font-weight: 700;
+    fill: var(--accent);
+    text-anchor: middle;
+  }
+  .readout-value.fault-highlight {
+    fill: var(--red);
+    filter: drop-shadow(0 0 8px var(--red-glow));
+  }
+  .readout b.sig.fault-highlight {
+    color: var(--red);
+    background: #ff4d5e1f;
+    border: 1px solid #ff4d5e55;
+    border-radius: 4px;
+    padding: 2px 6px;
+    box-shadow: 0 0 14px var(--red-glow);
+  }
+  @keyframes faultReadoutPulse {
+    0%, 100% { stroke-width: 3; opacity: 1; }
+    50% { stroke-width: 4; opacity: 0.82; }
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    padding: 12px 32px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--grid);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 20px; height: 2px; background: var(--wire); }
+  .legend-swatch.active { background: var(--flow); height: 2.5px; }
+  .legend-swatch.voltage { background: var(--voltage); height: 2.5px; }
+  .legend-swatch.sense {
+    background: repeating-linear-gradient(90deg, var(--cyan) 0 4px, transparent 4px 8px);
+    height: 2.5px;
+  }
+  .legend-swatch.dead { background: var(--wire-dead); }
+  .legend-icon { width: 14px; height: 14px; }
+  .legend-arrow { color: var(--flow); font-size: 14px; font-weight: 700; }
+
+  .scenario-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--grid);
+    flex-wrap: wrap;
+  }
+  .scenario-btn {
+    background: transparent;
+    border: 1px solid var(--grid);
+    color: var(--text-dim);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+  .scenario-btn:hover { border-color: var(--accent); color: var(--text); }
+  .scenario-btn.active {
+    background: var(--accent);
+    color: #0a0e1a;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  .scenario-btn.fault.active {
+    background: var(--red);
+    color: var(--text);
+    border-color: var(--red);
+  }
+
+  .meter-hints {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .meter-hints span {
+    border: 1px solid #ff4d5e33;
+    background: #0a0e1a99;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .footer-note {
+    text-align: center;
+    padding: 16px;
+    color: var(--text-faint);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+  }
+
+  @media (max-width: 700px) {
+    header { padding: 20px 18px 10px; }
+    .legend { padding: 10px 18px; gap: 12px; }
+    .container { padding: 16px 18px; overflow-x: auto; }
+    .circuit-card { min-width: 640px; }
+    .meter-hints { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>5V</span> Sensor Circuits — 2-Wire vs 3-Wire</h1>
+  <div class="subtitle">Directional current flow shown with moving dashes and arrows. Adjust the sensor value to watch the signal voltage track it. Click a fault scenario to see exactly where the break is and how current redistributes.</div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch"></div>Circuit wire</div>
+  <div class="legend-item"><div class="legend-swatch active"></div>Current flow <span class="legend-arrow">▶</span></div>
+  <div class="legend-item"><div class="legend-swatch voltage"></div>Voltage present</div>
+  <div class="legend-item"><div class="legend-swatch sense"></div>Signal sense</div>
+  <div class="legend-item"><div class="legend-swatch dead"></div>Dead segment</div>
+  <div class="legend-item">
+    <svg class="legend-icon" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#ff4d5e" stroke-width="1.5"/><line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="#ff4d5e" stroke-width="1.5"/><line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="#ff4d5e" stroke-width="1.5"/></svg>
+    Open circuit
+  </div>
+  <div class="legend-item">
+    <svg class="legend-icon" viewBox="0 0 14 14"><polygon points="6,1 3,7 6,7 5,13 10,5 7,5 9,1" fill="#ff4d5e"/></svg>
+    Short to rail
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ================================================ -->
+  <!-- ============ 2-WIRE THERMISTOR ================== -->
+  <!-- ================================================ -->
+  <div class="circuit-card" id="s2Card">
+    <div class="card-header">
+      <div class="card-title">2-Wire Sensor (Thermistor)<span class="tag">ECT · IAT · OIL TEMP</span></div>
+      <div class="state-badge" id="s2State">NORMAL</div>
+    </div>
+
+    <!-- Taller viewBox to accommodate readout boxes ABOVE sensor and ECM -->
+    <svg viewBox="0 0 640 400" id="s2Svg">
+
+      <!-- SENSOR RESISTANCE READOUT (above sensor, larger) -->
+      <g>
+        <rect class="readout-box-bg" x="40" y="20" width="140" height="60" rx="4"/>
+        <text class="readout-label" x="110" y="40">R_THERMISTOR</text>
+        <text class="readout-value" x="110" y="68" id="s2Rtherm">313 Ω</text>
+      </g>
+
+      <!-- V_SIGNAL READOUT (above ECM, larger) -->
+      <g>
+        <rect class="readout-box-bg" id="s2VsigBox" x="465" y="20" width="160" height="60" rx="4"/>
+        <text class="readout-label" x="545" y="40">V_SIGNAL</text>
+        <text class="readout-value" x="545" y="68" id="s2Vsig">0.56 V</text>
+      </g>
+
+      <!-- SENSOR (left) - pushed down to y=130 -->
+      <text class="sch-component-label" x="40" y="120">Sensor (thermistor)</text>
+      <rect class="box-fill" x="40" y="140" width="140" height="120" />
+
+      <!-- Thermistor symbol -->
+      <line class="wire" x1="70" y1="160" x2="70" y2="180" />
+      <polyline class="wire" points="70,180 85,185 55,195 85,205 55,215 85,225 70,230" />
+      <line class="wire" x1="70" y1="230" x2="70" y2="250" />
+      <line class="wire" x1="50" y1="235" x2="95" y2="175" stroke-width="1.5"/>
+      <polygon points="92,172 100,172 96,180" fill="var(--wire)"/>
+      <line class="wire" x1="50" y1="160" x2="50" y2="250" />
+      <line class="wire" x1="50" y1="160" x2="70" y2="160" />
+      <line class="wire" x1="50" y1="250" x2="70" y2="250" />
+
+      <!-- Terminals -->
+      <rect class="box-fill" x="155" y="165" width="25" height="25" />
+      <text class="sch-pin-num" x="167.5" y="182">A</text>
+      <line class="wire" x1="70" y1="170" x2="155" y2="177.5" />
+
+      <rect class="box-fill" x="155" y="210" width="25" height="25" />
+      <text class="sch-pin-num" x="167.5" y="227">B</text>
+      <line class="wire" x1="70" y1="240" x2="155" y2="222.5" />
+
+      <!-- ECM (right) -->
+      <rect class="box-fill" x="470" y="110" width="150" height="230" />
+      <text class="sch-component-label" x="545" y="330" text-anchor="middle">ECM</text>
+
+      <!-- Pin 32 -->
+      <rect class="box-fill" x="360" y="165" width="30" height="25" />
+      <text class="sch-pin-num" x="375" y="182">32</text>
+
+      <!-- TAN wire: current flows from ECM pin 32 -> LEFT to sensor terminal A (going toward sensor = reverse in stroke terms since x1<x2) -->
+      <!-- Segments are split at common fault points. Forward dash anim moves x1->x2 (sensor->ECM). 
+           But current actually flows ECM->sensor (x2->x1), so we need REVERSE animation. -->
+      <line class="wire" id="s2WireTanSensor" x1="180" y1="177.5" x2="271" y2="177.5" />
+      <line class="wire" id="s2WireTanOpenToShort" x1="271" y1="177.5" x2="300" y2="177.5" />
+      <line class="wire" id="s2WireTanShortTo5v" x1="300" y1="177.5" x2="330" y2="177.5" />
+      <line class="wire" id="s2WireTanEcm" x1="330" y1="177.5" x2="360" y2="177.5" />
+      <text class="sch-wire-label" x="270" y="170" text-anchor="middle">TAN</text>
+      <!-- Arrow pointing LEFT (toward sensor, direction of current flow) -->
+      <polygon class="flow-arrow" id="s2ArrowTan" points="268,177.5 278,172 278,183" />
+
+      <!-- Pin 49 -->
+      <rect class="box-fill" x="360" y="210" width="30" height="25" />
+      <text class="sch-pin-num" x="375" y="227">49</text>
+
+      <!-- GY/R wire: current flows from sensor B -> RIGHT to pin 49 (ECM). Stroke drawn x1=180 to x2=360. Current flows sensor->ECM = same direction as stroke = FORWARD animation. -->
+      <line class="wire" id="s2WireGyrSensor" x1="180" y1="222.5" x2="271" y2="222.5" />
+      <line class="wire" id="s2WireGyrOpenToShort" x1="271" y1="222.5" x2="300" y2="222.5" />
+      <line class="wire" id="s2WireGyrEcm" x1="300" y1="222.5" x2="360" y2="222.5" />
+      <text class="sch-wire-label" x="270" y="242" text-anchor="middle">GY/R</text>
+      <!-- Arrow pointing RIGHT (toward ECM) -->
+      <polygon class="flow-arrow" id="s2ArrowGyr" points="288,222.5 278,217 278,228" />
+
+      <!-- Inside ECM: 5V rail -> pullup -> pin 32. Current flows 5V(right) -> pullup -> pin 32(left). Stroke drawn x1=390 (pin side) to x2=500 (pullup start). Current flows x2->x1 = REVERSE. -->
+      <line class="wire" id="s2EcmSig" x1="390" y1="177.5" x2="500" y2="177.5" />
+      <polyline class="wire" id="s2EcmR" points="500,177.5 508,170 518,185 528,170 538,185 548,170 556,177.5" />
+      <line class="wire" id="s2EcmTo5v" x1="556" y1="177.5" x2="615" y2="177.5" />
+      <text class="sch-label" x="585" y="165" text-anchor="middle" style="font-size:12px;">5 volts</text>
+      <!-- Arrow on the ECM internal segment (between pin and pullup), pointing LEFT (toward pin) -->
+      <polygon class="flow-arrow" id="s2ArrowEcm" points="430,177.5 440,172 440,183" />
+
+      <!-- Signal branch -->
+      <line class="wire" id="s2EcmSignalBranch" x1="470" y1="177.5" x2="470" y2="140" />
+      <line class="wire" id="s2EcmSignalLine" x1="470" y1="140" x2="615" y2="140" />
+      <text class="sch-label" x="585" y="132" text-anchor="middle" style="font-size:12px;">Signal</text>
+
+      <!-- Inside ECM: pin 49 -> sensor ground. Stroke x1=390 to x2=615. Current flows pin(left) -> ground label(right) = FORWARD. -->
+      <line class="wire" id="s2EcmGnd" x1="390" y1="222.5" x2="615" y2="222.5" />
+      <text class="sch-label" x="540" y="242" text-anchor="middle" style="font-size:12px;">Sensor Ground</text>
+      <!-- Arrow pointing RIGHT -->
+      <polygon class="flow-arrow" id="s2ArrowEcmGnd" points="510,222.5 500,217 500,228" />
+
+      <!-- FAULT MARKERS -->
+      <g class="fault-marker" id="s2FaultOpenSig">
+        <rect x="260" y="172" width="22" height="12" fill="var(--panel-2)"/>
+        <circle class="fault-x-bg" cx="271" cy="177.5" r="14"/>
+        <circle class="fault-x-ring" cx="271" cy="177.5" r="11"/>
+        <line class="fault-x-line" x1="265" y1="171.5" x2="277" y2="183.5"/>
+        <line class="fault-x-line" x1="277" y1="171.5" x2="265" y2="183.5"/>
+        <text class="fault-label" x="271" y="158">OPEN</text>
+      </g>
+
+      <g class="fault-marker" id="s2FaultOpenGnd">
+        <rect x="260" y="217" width="22" height="12" fill="var(--panel-2)"/>
+        <circle class="fault-x-bg" cx="271" cy="222.5" r="14"/>
+        <circle class="fault-x-ring" cx="271" cy="222.5" r="11"/>
+        <line class="fault-x-line" x1="265" y1="216.5" x2="277" y2="228.5"/>
+        <line class="fault-x-line" x1="277" y1="216.5" x2="265" y2="228.5"/>
+        <text class="fault-label" x="271" y="260">OPEN</text>
+      </g>
+
+      <g class="short-marker" id="s2FaultShortSigGnd">
+        <line x1="300" y1="177.5" x2="300" y2="222.5" stroke="var(--red)" stroke-width="2.5" stroke-dasharray="4 3" filter="drop-shadow(0 0 4px var(--red-glow))"/>
+        <polygon class="short-bolt" points="295,192 297,200 293,200 300,210 307,200 303,200 305,192 300,188"/>
+        <text class="fault-label" x="345" y="198">SHORT</text>
+        <text class="fault-label" x="345" y="210" style="font-size:10px;">sig→gnd</text>
+      </g>
+
+      <g class="short-marker" id="s2FaultShortSig5v">
+        <line x1="330" y1="177.5" x2="330" y2="140" stroke="var(--red)" stroke-width="2.5" stroke-dasharray="4 3" filter="drop-shadow(0 0 4px var(--red-glow))"/>
+        <circle cx="330" cy="140" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <polygon class="short-bolt" points="325,154 327,162 323,162 330,172 337,162 333,162 335,154 330,150"/>
+        <text class="fault-label" x="280" y="158">SHORT</text>
+        <text class="fault-label" x="280" y="170" style="font-size:10px;">sig→5V</text>
+      </g>
+
+      <!-- GND shorted to 5V -->
+      <g class="short-marker" id="s2FaultShortGnd5v">
+        <line x1="420" y1="222.5" x2="420" y2="140" stroke="var(--red)" stroke-width="2.5" stroke-dasharray="4 3" filter="drop-shadow(0 0 4px var(--red-glow))"/>
+        <circle cx="420" cy="140" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <circle cx="420" cy="222.5" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <polygon class="short-bolt" points="415,175 417,183 413,183 420,193 427,183 423,183 425,175 420,171"/>
+        <text class="fault-label" x="380" y="158">SHORT</text>
+        <text class="fault-label" x="380" y="170" style="font-size:10px;">gnd→5V</text>
+      </g>
+    </svg>
+
+    <div class="controls">
+      <div class="slider-group">
+        <label>Coolant Temperature <b id="s2TempLabel">80 °C</b></label>
+        <input type="range" id="s2Temp" min="-40" max="130" value="80" step="1">
+      </div>
+      <div class="readout">
+        <span>R<sub>NTC</sub>: <b id="s2RRead">313 Ω</b></span>
+        <span>V<sub>sig</sub>: <b class="sig" id="s2VRead">0.56 V</b></span>
+      </div>
+    </div>
+
+    <div class="scenario-row">
+      <button class="scenario-btn active" data-s2="normal">NORMAL</button>
+      <button class="scenario-btn fault" data-s2="open-sig">OPEN SIGNAL</button>
+      <button class="scenario-btn fault" data-s2="open-gnd">OPEN GROUND</button>
+      <button class="scenario-btn fault" data-s2="short-sig-gnd">SIG → GND</button>
+      <button class="scenario-btn fault" data-s2="short-sig-5v">SIG → 5V</button>
+      <button class="scenario-btn fault" data-s2="short-gnd-5v">GND → 5V</button>
+    </div>
+
+    <div class="explain">
+      <strong>Architecture:</strong> The thermistor forms a voltage divider with an internal ECM pull-up resistor tied to 5V. The TAN wire (pin 32) carries <em>both</em> the supply current and the signal voltage — the ECM reads the divided voltage at this node. The GY/R wire (pin 49) is the dedicated sensor return.
+      <br><br>
+      <strong>Flow direction:</strong> Current exits the ECM's internal 5V rail, flows through the pull-up, out pin 32, along TAN to terminal A, through the thermistor, out terminal B, back along GY/R to pin 49, and to sensor ground inside the ECM.
+      <div class="fault-callout" id="s2FaultCallout">
+        <strong id="s2FaultTitle"></strong> <span id="s2FaultDesc"></span>
+        <div class="meter-hints" id="s2MeterHints"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================ -->
+  <!-- ============ 3-WIRE SENSOR ====================== -->
+  <!-- ================================================ -->
+  <div class="circuit-card" id="s3Card">
+    <div class="card-header">
+      <div class="card-title">3-Wire Sensor (Potentiometric/Active)<span class="tag">TPS · MAP · FUEL LEVEL</span></div>
+      <div class="state-badge" id="s3State">NORMAL</div>
+    </div>
+
+    <svg viewBox="0 0 640 430" id="s3Svg">
+
+      <!-- SENSOR RESISTANCE READOUT (above sensor) -->
+      <g>
+        <rect class="readout-box-bg" x="40" y="20" width="140" height="60" rx="4"/>
+        <text class="readout-label" x="110" y="40">R_WIPER-GND</text>
+        <text class="readout-value" x="110" y="68" id="s3Rsensor">2.50 kΩ</text>
+      </g>
+
+      <!-- V_SIGNAL READOUT (above ECM) -->
+      <g>
+        <rect class="readout-box-bg" id="s3VsigBox" x="465" y="20" width="160" height="60" rx="4"/>
+        <text class="readout-label" x="545" y="40">V_SIGNAL</text>
+        <text class="readout-value" x="545" y="68" id="s3Vsig">2.50 V</text>
+      </g>
+
+      <!-- SENSOR (left) - shifted down to y=120 -->
+      <text class="sch-component-label" x="40" y="110">Sensor</text>
+      <rect class="box-fill" x="40" y="130" width="140" height="200" />
+
+      <!-- Potentiometer: vertical zigzag -->
+      <polyline class="wire" points="70,155 85,160 55,170 85,180 55,190 85,200 55,210 85,220 55,230 85,240 55,250 85,260 55,270 85,280 70,285" />
+      <!-- Wiper arrow -->
+      <line class="wire" x1="95" y1="220" x2="130" y2="220" stroke-width="1.5"/>
+      <polygon points="97,216 87,220 97,224" fill="var(--wire)"/>
+
+      <!-- Terminals -->
+      <rect class="box-fill" x="155" y="147" width="25" height="25" />
+      <text class="sch-pin-num" x="167.5" y="164">C</text>
+      <line class="wire" x1="70" y1="155" x2="155" y2="160" />
+
+      <rect class="box-fill" x="155" y="207" width="25" height="25" />
+      <text class="sch-pin-num" x="167.5" y="224">B</text>
+      <line class="wire" x1="130" y1="220" x2="155" y2="220" />
+
+      <rect class="box-fill" x="155" y="267" width="25" height="25" />
+      <text class="sch-pin-num" x="167.5" y="284">A</text>
+      <line class="wire" x1="70" y1="285" x2="155" y2="280" />
+
+      <!-- ECM (right) -->
+      <rect class="box-fill" x="470" y="120" width="150" height="240" />
+      <text class="sch-component-label" x="545" y="350" text-anchor="middle">ECM</text>
+
+      <!-- Pin 50 (5V) -->
+      <rect class="box-fill" x="360" y="147" width="30" height="25" />
+      <text class="sch-pin-num" x="375" y="164">50</text>
+      <!-- LG/R wire: ECM sends 5V out pin 50 -> LEFT to sensor C. Stroke x1=180 (sensor) to x2=360 (ECM). Current flows ECM->sensor = REVERSE. -->
+      <line class="wire" id="s3Wire5v" x1="180" y1="160" x2="360" y2="160" />
+      <text class="sch-wire-label" x="270" y="152" text-anchor="middle">LG/R</text>
+      <!-- Arrow pointing LEFT -->
+      <polygon class="flow-arrow" id="s3Arrow5v" points="268,160 278,155 278,165" />
+      <!-- Inside ECM: 5V line -->
+      <line class="wire" id="s3Ecm5vLine" x1="390" y1="160" x2="615" y2="160" />
+      <text class="sch-label" x="585" y="152" text-anchor="middle" style="font-size:12px;">5 volts</text>
+
+      <!-- Pin 33 (Signal) -->
+      <rect class="box-fill" x="360" y="207" width="30" height="25" />
+      <text class="sch-pin-num" x="375" y="224">33</text>
+      <!-- LG wire: signal is a voltage tap from wiper. Tiny current into ECM's high-impedance ADC. Direction: sensor -> ECM = FORWARD -->
+      <line class="wire" id="s3WireSig" x1="180" y1="220" x2="360" y2="220" />
+      <text class="sch-wire-label" x="270" y="212" text-anchor="middle">LG</text>
+      <!-- Arrow pointing RIGHT (toward ECM) -->
+      <polygon class="flow-arrow" id="s3ArrowSig" points="288,220 278,215 278,225" />
+      <!-- Inside ECM: signal line -->
+      <line class="wire" id="s3EcmSigLine" x1="390" y1="220" x2="615" y2="220" />
+      <text class="sch-label" x="585" y="212" text-anchor="middle" style="font-size:12px;">Signal</text>
+
+      <!-- Pin 49 (Sensor Ground) -->
+      <rect class="box-fill" x="360" y="267" width="30" height="25" />
+      <text class="sch-pin-num" x="375" y="284">49</text>
+      <!-- BK/LG wire: return current from sensor A -> pin 49. Direction: sensor->ECM = FORWARD -->
+      <line class="wire" id="s3WireGnd" x1="180" y1="280" x2="360" y2="280" />
+      <text class="sch-wire-label" x="270" y="272" text-anchor="middle">BK/LG</text>
+      <!-- Arrow pointing RIGHT -->
+      <polygon class="flow-arrow" id="s3ArrowGnd" points="288,280 278,275 278,285" />
+      <!-- Inside ECM: sensor ground line -->
+      <line class="wire" id="s3EcmGndLine" x1="390" y1="280" x2="615" y2="280" />
+      <text class="sch-label" x="540" y="272" text-anchor="middle" style="font-size:12px;">Sensor Ground</text>
+
+      <!-- FAULT MARKERS -->
+      <g class="fault-marker" id="s3FaultOpen5v">
+        <rect x="260" y="155" width="22" height="12" fill="var(--panel-2)"/>
+        <circle class="fault-x-bg" cx="271" cy="160" r="14"/>
+        <circle class="fault-x-ring" cx="271" cy="160" r="11"/>
+        <line class="fault-x-line" x1="265" y1="154" x2="277" y2="166"/>
+        <line class="fault-x-line" x1="277" y1="154" x2="265" y2="166"/>
+        <text class="fault-label" x="320" y="158">OPEN</text>
+      </g>
+
+      <g class="fault-marker" id="s3FaultOpenSig">
+        <rect x="260" y="215" width="22" height="12" fill="var(--panel-2)"/>
+        <circle class="fault-x-bg" cx="271" cy="220" r="14"/>
+        <circle class="fault-x-ring" cx="271" cy="220" r="11"/>
+        <line class="fault-x-line" x1="265" y1="214" x2="277" y2="226"/>
+        <line class="fault-x-line" x1="277" y1="214" x2="265" y2="226"/>
+        <text class="fault-label" x="320" y="200">OPEN</text>
+      </g>
+
+      <g class="fault-marker" id="s3FaultOpenRtn">
+        <rect x="260" y="275" width="22" height="12" fill="var(--panel-2)"/>
+        <circle class="fault-x-bg" cx="271" cy="280" r="14"/>
+        <circle class="fault-x-ring" cx="271" cy="280" r="11"/>
+        <line class="fault-x-line" x1="265" y1="274" x2="277" y2="286"/>
+        <line class="fault-x-line" x1="277" y1="274" x2="265" y2="286"/>
+        <text class="fault-label" x="320" y="303">OPEN</text>
+      </g>
+
+      <g class="short-marker" id="s3FaultShort5v">
+        <line x1="320" y1="160" x2="320" y2="220" stroke="var(--red)" stroke-width="2.5" stroke-dasharray="4 3" filter="drop-shadow(0 0 4px var(--red-glow))"/>
+        <circle cx="320" cy="160" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <circle cx="320" cy="220" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <polygon class="short-bolt" points="315,178 317,186 313,186 320,198 327,186 323,186 325,178 320,174"/>
+        <text class="fault-label" x="270" y="190">SHORT</text>
+        <text class="fault-label" x="270" y="202" style="font-size:10px;">sig→5V</text>
+      </g>
+
+      <g class="short-marker" id="s3FaultShortGnd">
+        <line x1="320" y1="220" x2="320" y2="280" stroke="var(--red)" stroke-width="2.5" stroke-dasharray="4 3" filter="drop-shadow(0 0 4px var(--red-glow))"/>
+        <circle cx="320" cy="220" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <circle cx="320" cy="280" r="4" fill="var(--red)" filter="drop-shadow(0 0 5px var(--red-glow))"/>
+        <polygon class="short-bolt" points="315,238 317,246 313,246 320,258 327,246 323,246 325,238 320,234"/>
+        <text class="fault-label" x="270" y="250">SHORT</text>
+        <text class="fault-label" x="270" y="262" style="font-size:10px;">sig→gnd</text>
+      </g>
+    </svg>
+
+    <div class="controls">
+      <div class="slider-group">
+        <label>Sensor Input <b id="s3PLabel">50% (mid-travel)</b></label>
+        <input type="range" id="s3Pressure" min="0" max="100" value="50" step="1">
+      </div>
+      <div class="readout">
+        <span>V<sub>sig</sub>: <b class="sig" id="s3VRead">2.50 V</b></span>
+      </div>
+    </div>
+
+    <div class="scenario-row">
+      <button class="scenario-btn active" data-s3="normal">NORMAL</button>
+      <button class="scenario-btn fault" data-s3="open-5v">OPEN 5V</button>
+      <button class="scenario-btn fault" data-s3="open-sig">OPEN SIGNAL</button>
+      <button class="scenario-btn fault" data-s3="open-rtn">OPEN GROUND</button>
+      <button class="scenario-btn fault" data-s3="short-5v">SIG → 5V</button>
+      <button class="scenario-btn fault" data-s3="short-gnd">SIG → GND</button>
+    </div>
+
+    <div class="explain">
+      <strong>Architecture:</strong> Three dedicated wires — LG/R (5V reference, pin 50), LG (signal out, pin 33), and BK/LG (sensor ground, pin 49). The sensor is a potentiometer with a wiper. Supply current flows <em>through</em> the full resistive element from pin 50 to pin 49; the signal wire on pin 33 is a high-impedance voltage tap at the wiper position — the ECM draws almost no current on it.
+      <br><br>
+      <strong>Flow direction:</strong> 5V exits pin 50 → LG/R → terminal C → down through pot element → terminal A → BK/LG → back to pin 49 (sensor ground). The LG signal wire carries only microamps to the ECM's ADC.
+      <div class="fault-callout" id="s3FaultCallout">
+        <strong id="s3FaultTitle"></strong> <span id="s3FaultDesc"></span>
+        <div class="meter-hints" id="s3MeterHints"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">
+  Schematic layout per PSI wiring conventions · Wire colors: TAN, GY/R, LG/R, LG, BK/LG · Pin numbers per typical ECM harness
+</div>
+
+<script>
+  // ================== 2-WIRE ==================
+  const R25 = 2500, BETA = 3977, T25 = 298.15, R_PU = 2490;
+
+  const s2Temp = document.getElementById('s2Temp');
+  const s2TempLabel = document.getElementById('s2TempLabel');
+  const s2Rtherm = document.getElementById('s2Rtherm');
+  const s2RRead = document.getElementById('s2RRead');
+  const s2VsigBox = document.getElementById('s2VsigBox');
+  const s2Vsig = document.getElementById('s2Vsig');
+  const s2VRead = document.getElementById('s2VRead');
+  const s2State = document.getElementById('s2State');
+  const s2Card = document.getElementById('s2Card');
+
+  // Wires
+  const s2WireTanSensor = document.getElementById('s2WireTanSensor');
+  const s2WireTanOpenToShort = document.getElementById('s2WireTanOpenToShort');
+  const s2WireTanShortTo5v = document.getElementById('s2WireTanShortTo5v');
+  const s2WireTanEcm = document.getElementById('s2WireTanEcm');
+  const s2WireGyrSensor = document.getElementById('s2WireGyrSensor');
+  const s2WireGyrOpenToShort = document.getElementById('s2WireGyrOpenToShort');
+  const s2WireGyrEcm = document.getElementById('s2WireGyrEcm');
+  const s2EcmSig = document.getElementById('s2EcmSig');
+  const s2EcmR = document.getElementById('s2EcmR');
+  const s2EcmTo5v = document.getElementById('s2EcmTo5v');
+  const s2EcmSignalBranch = document.getElementById('s2EcmSignalBranch');
+  const s2EcmSignalLine = document.getElementById('s2EcmSignalLine');
+  const s2EcmGnd = document.getElementById('s2EcmGnd');
+
+  const s2TanSegments = [s2WireTanSensor, s2WireTanOpenToShort, s2WireTanShortTo5v, s2WireTanEcm];
+  const s2TanSensorSide = [s2WireTanSensor, s2WireTanOpenToShort];
+  const s2TanEcmSide = [s2WireTanShortTo5v, s2WireTanEcm];
+  const s2TanTo5vShort = [s2WireTanSensor, s2WireTanOpenToShort, s2WireTanShortTo5v];
+  const s2GyrSegments = [s2WireGyrSensor, s2WireGyrOpenToShort, s2WireGyrEcm];
+  const s2GyrSensorSide = [s2WireGyrSensor, s2WireGyrOpenToShort];
+  const s2SignalSense = [s2EcmSignalBranch, s2EcmSignalLine];
+
+  // Flow arrows
+  const s2ArrowTan = document.getElementById('s2ArrowTan');
+  const s2ArrowGyr = document.getElementById('s2ArrowGyr');
+  const s2ArrowEcm = document.getElementById('s2ArrowEcm');
+  const s2ArrowEcmGnd = document.getElementById('s2ArrowEcmGnd');
+
+  const s2FaultCallout = document.getElementById('s2FaultCallout');
+  const s2FaultTitle = document.getElementById('s2FaultTitle');
+  const s2FaultDesc = document.getElementById('s2FaultDesc');
+  const s2MeterHints = document.getElementById('s2MeterHints');
+
+  const s2Markers = {
+    'open-sig': document.getElementById('s2FaultOpenSig'),
+    'open-gnd': document.getElementById('s2FaultOpenGnd'),
+    'short-sig-gnd': document.getElementById('s2FaultShortSigGnd'),
+    'short-sig-5v': document.getElementById('s2FaultShortSig5v'),
+    'short-gnd-5v': document.getElementById('s2FaultShortGnd5v'),
+  };
+
+  let s2Scenario = 'normal';
+
+  function addClassTo(elements, className) {
+    elements.forEach(el => el.classList.add(className));
+  }
+
+  function renderHints(container, hints) {
+    container.replaceChildren(...hints.map(text => {
+      const span = document.createElement('span');
+      span.textContent = text;
+      return span;
+    }));
+  }
+
+  function setVoltageHighlight(box, svgValue, inlineValue, shouldHighlight) {
+    [box, svgValue, inlineValue].forEach(el => {
+      el.classList.toggle('fault-highlight', shouldHighlight);
+    });
+  }
+
+  function computeThermR(tempC) {
+    const T = tempC + 273.15;
+    return R25 * Math.exp(BETA * (1/T - 1/T25));
+  }
+
+  function formatR(r) {
+    if (r >= 1000) return (r/1000).toFixed(2) + ' kΩ';
+    return r.toFixed(0) + ' Ω';
+  }
+
+  function clearAllS2() {
+    Object.values(s2Markers).forEach(m => m.classList.remove('show'));
+    [...s2TanSegments, ...s2GyrSegments, s2EcmSig, s2EcmR, s2EcmTo5v, s2EcmSignalBranch, s2EcmSignalLine, s2EcmGnd].forEach(w => {
+      w.classList.remove('dead', 'active-fwd', 'active-rev', 'voltage', 'sense');
+    });
+    [s2ArrowTan, s2ArrowGyr, s2ArrowEcm, s2ArrowEcmGnd].forEach(a => a.classList.remove('show', 'sense'));
+    renderHints(s2MeterHints, []);
+  }
+
+  function updateS2() {
+    const t = parseFloat(s2Temp.value);
+    const r = computeThermR(t);
+    let v;
+    let statusText = 'NORMAL';
+    let faultTitle = '', faultDesc = '';
+
+    clearAllS2();
+
+    if (s2Scenario === 'normal') {
+      v = 5 * r / (r + R_PU);
+      // Current flows: 5V rail -> pullup -> pin 32 -> TAN (right to left) -> thermistor -> GY/R (left to right) -> pin 49 -> sensor ground
+      // Stroke s2EcmSig: x1=390 (pin) to x2=500 (pullup). Current flows pullup->pin = x2->x1 = REVERSE
+      s2EcmSig.classList.add('active-rev');
+      s2EcmR.classList.add('active-rev');
+      s2EcmTo5v.classList.add('active-rev');
+      // TAN segments are drawn left-to-right; current flows ECM->sensor, so use reverse animation.
+      addClassTo(s2TanSegments, 'active-rev');
+      // GY/R segments are drawn sensor->ECM, matching return-current direction.
+      addClassTo(s2GyrSegments, 'active-fwd');
+      // Stroke s2EcmGnd: x1=390 to x2=615. Current flows pin 49 (left) -> ground (right) = FORWARD
+      s2EcmGnd.classList.add('active-fwd');
+      addClassTo(s2SignalSense, 'sense');
+      // Arrows
+      s2ArrowTan.classList.add('show');
+      s2ArrowGyr.classList.add('show');
+      s2ArrowEcm.classList.add('show');
+      s2ArrowEcmGnd.classList.add('show');
+    } else if (s2Scenario === 'open-sig') {
+      v = 5.0;
+      statusText = 'FAULT · OPEN SIGNAL';
+      s2Markers['open-sig'].classList.add('show');
+      // No completed path through the thermistor. The ECM side is pulled high, but no load current flows.
+      addClassTo([s2WireTanSensor, ...s2GyrSegments], 'dead');
+      addClassTo([s2WireTanOpenToShort, s2WireTanShortTo5v, s2WireTanEcm, s2EcmSig, s2EcmR, s2EcmTo5v, ...s2SignalSense], 'voltage');
+      faultTitle = 'Open circuit on the TAN signal wire.';
+      faultDesc = 'No current path through the thermistor. The ECM pull-up drags pin 32 to +5V. ECM reads minimum temperature.';
+      renderHints(s2MeterHints, ['ECM pin 32: about 5.0 V', 'Scan symptom: very cold/min temp', 'Next check: continuity on TAN']);
+    } else if (s2Scenario === 'open-gnd') {
+      v = 5.0;
+      statusText = 'FAULT · OPEN GROUND';
+      s2Markers['open-gnd'].classList.add('show');
+      // The sensor side rises toward 5V through the thermistor, but the ECM return side is separated by the open.
+      addClassTo([...s2TanSegments, s2WireGyrSensor], 'voltage');
+      addClassTo([s2WireGyrOpenToShort, s2WireGyrEcm], 'dead');
+      addClassTo([s2EcmSig, s2EcmR, s2EcmTo5v, ...s2SignalSense], 'voltage');
+      faultTitle = 'Open circuit on the GY/R sensor return wire.';
+      faultDesc = 'No return path for current, so no voltage drop across the pull-up. The ECM sees the full 5V. Reads minimum temperature — looks identical to an open signal wire at pin 32.';
+      renderHints(s2MeterHints, ['ECM pin 32: about 5.0 V', 'Sensor return: open to ECM ground', 'Next check: voltage drop/continuity on GY/R']);
+    } else if (s2Scenario === 'short-sig-gnd') {
+      v = 0.0;
+      statusText = 'FAULT · SIG → GND';
+      s2Markers['short-sig-gnd'].classList.add('show');
+      // Current flows 5V -> pullup -> pin 32 -> short -> ground. Skips the sensor entirely.
+      s2EcmSig.classList.add('active-rev');
+      s2EcmR.classList.add('active-rev');
+      s2EcmTo5v.classList.add('active-rev');
+      // TAN active between pin 32 and the short; GY/R active only from the short back to ECM ground.
+      addClassTo(s2TanEcmSide, 'active-rev');
+      s2WireGyrEcm.classList.add('active-fwd');
+      addClassTo([...s2TanSensorSide, ...s2GyrSensorSide], 'dead');
+      s2EcmGnd.classList.add('active-fwd');
+      s2ArrowEcm.classList.add('show');
+      s2ArrowEcmGnd.classList.add('show');
+      faultTitle = 'Signal wire shorted to sensor ground.';
+      faultDesc = 'Signal forced to 0V regardless of thermistor resistance. ECM reads maximum temperature. Current still flows through the pull-up, just bypasses the sensor.';
+      renderHints(s2MeterHints, ['ECM pin 32: about 0.0 V', 'Scan symptom: hot/max temp', 'Next check: TAN shorted to GY/R/ground']);
+    } else if (s2Scenario === 'short-sig-5v') {
+      v = 5.0;
+      statusText = 'FAULT · SIG → 5V';
+      s2Markers['short-sig-5v'].classList.add('show');
+      // A hard 5V source feeds the sensor side of TAN; the ECM pull-up is no longer what controls the node.
+      addClassTo(s2TanTo5vShort, 'active-rev');
+      addClassTo(s2GyrSegments, 'active-fwd');
+      addClassTo([s2WireTanEcm, s2EcmSig, s2EcmR, s2EcmTo5v, ...s2SignalSense], 'voltage');
+      s2EcmGnd.classList.add('active-fwd');
+      s2ArrowTan.classList.add('show');
+      s2ArrowGyr.classList.add('show');
+      s2ArrowEcmGnd.classList.add('show');
+      faultTitle = 'Signal wire shorted to +5V reference.';
+      faultDesc = 'Signal locked at 5V. ECM reads minimum temperature. If the short is to a low-impedance 5V source, current can still flow through the thermistor and return wire while bypassing the ECM pull-up.';
+      renderHints(s2MeterHints, ['ECM pin 32: about 5.0 V', 'Unplugged TAN: still 5.0 V', 'Next check: TAN shorted to 5V ref']);
+    } else if (s2Scenario === 'short-gnd-5v') {
+      statusText = 'FAULT · GND → 5V';
+      s2Markers['short-gnd-5v'].classList.add('show');
+      // Sensor ground is now at 5V. Both sides of pullup equal 5V = no drop. 
+      // But sensor return is also at 5V, so divider math: thermistor between 5V (pin32) and 5V (pin49) = no current through sensor
+      // Signal sits at 5V.
+      // With sensor ground shorted to 5V, and pullup tied to 5V, both rails are equal.
+      // Thermistor has 0V across it. Pullup has 0V across it. Signal sits at 5V.
+      v = 5.0;
+      addClassTo([...s2TanSegments, ...s2GyrSegments, s2EcmSig, s2EcmR, s2EcmTo5v, s2EcmGnd, ...s2SignalSense], 'voltage');
+      faultTitle = 'Sensor ground wire shorted to +5V reference.';
+      faultDesc = 'Both ends of the sensor are now at 5V. No voltage across the thermistor, no current flow. Signal sits at 5V. ECM reads minimum temperature. This is a more severe harness fault that often affects other sensors sharing the same 5V rail — watch for multiple DTCs setting simultaneously.';
+      renderHints(s2MeterHints, ['Pin 49 return: about 5.0 V', 'Multiple 5V sensors may fail', 'Next check: GY/R shorted to 5V ref']);
+    }
+
+    s2TempLabel.textContent = t.toFixed(0) + ' °C';
+    s2RRead.textContent = formatR(r);
+    s2Rtherm.textContent = formatR(r);
+    s2Vsig.textContent = v.toFixed(2) + ' V';
+    s2VRead.textContent = v.toFixed(2) + ' V';
+    setVoltageHighlight(s2VsigBox, s2Vsig, s2VRead, s2Scenario !== 'normal');
+    s2State.textContent = statusText;
+    if (statusText === 'NORMAL') {
+      s2State.style.color = 'var(--accent)';
+      s2State.style.borderColor = '#4da6ff44';
+      s2State.style.background = '#4da6ff22';
+    } else {
+      s2State.style.color = 'var(--red)';
+      s2State.style.borderColor = '#ff4d5e44';
+      s2State.style.background = '#ff4d5e22';
+    }
+
+    if (s2Scenario === 'normal') {
+      s2Card.classList.remove('faulted');
+      s2FaultCallout.classList.remove('show');
+    } else {
+      s2Card.classList.add('faulted');
+      s2FaultCallout.classList.add('show');
+      s2FaultTitle.textContent = faultTitle;
+      s2FaultDesc.textContent = faultDesc;
+    }
+  }
+
+  s2Temp.addEventListener('input', updateS2);
+  document.querySelectorAll('[data-s2]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-s2]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      s2Scenario = btn.dataset.s2;
+      updateS2();
+    });
+  });
+
+  // ================== 3-WIRE ==================
+  const s3P = document.getElementById('s3Pressure');
+  const s3PLabel = document.getElementById('s3PLabel');
+  const s3VsigBox = document.getElementById('s3VsigBox');
+  const s3Vsig = document.getElementById('s3Vsig');
+  const s3VRead = document.getElementById('s3VRead');
+  const s3Rsensor = document.getElementById('s3Rsensor');
+  const s3State = document.getElementById('s3State');
+  const s3Card = document.getElementById('s3Card');
+
+  const s3Wire5v = document.getElementById('s3Wire5v');
+  const s3WireSig = document.getElementById('s3WireSig');
+  const s3WireGnd = document.getElementById('s3WireGnd');
+  const s3Ecm5vLine = document.getElementById('s3Ecm5vLine');
+  const s3EcmSigLine = document.getElementById('s3EcmSigLine');
+  const s3EcmGndLine = document.getElementById('s3EcmGndLine');
+
+  const s3Arrow5v = document.getElementById('s3Arrow5v');
+  const s3ArrowSig = document.getElementById('s3ArrowSig');
+  const s3ArrowGnd = document.getElementById('s3ArrowGnd');
+
+  const s3FaultCallout = document.getElementById('s3FaultCallout');
+  const s3FaultTitle = document.getElementById('s3FaultTitle');
+  const s3FaultDesc = document.getElementById('s3FaultDesc');
+  const s3MeterHints = document.getElementById('s3MeterHints');
+
+  const s3Markers = {
+    'open-5v': document.getElementById('s3FaultOpen5v'),
+    'open-sig': document.getElementById('s3FaultOpenSig'),
+    'open-rtn': document.getElementById('s3FaultOpenRtn'),
+    'short-5v': document.getElementById('s3FaultShort5v'),
+    'short-gnd': document.getElementById('s3FaultShortGnd'),
+  };
+
+  let s3Scenario = 'normal';
+
+  function computeSigVoltage(pct) {
+    return 0.5 + (pct / 100) * 4.0;
+  }
+
+  function pctDesc(p) {
+    if (p < 15) return p + '% (idle / low)';
+    if (p < 40) return p + '% (light)';
+    if (p < 70) return p + '% (mid-travel)';
+    if (p < 90) return p + '% (high)';
+    return p + '% (full scale)';
+  }
+
+  function clearAllS3() {
+    Object.values(s3Markers).forEach(m => m.classList.remove('show'));
+    [s3Wire5v, s3WireSig, s3WireGnd, s3Ecm5vLine, s3EcmSigLine, s3EcmGndLine].forEach(w => {
+      w.classList.remove('dead', 'active-fwd', 'active-rev', 'voltage', 'sense');
+    });
+    [s3Arrow5v, s3ArrowSig, s3ArrowGnd].forEach(a => a.classList.remove('show', 'sense'));
+    renderHints(s3MeterHints, []);
+  }
+
+  function updateS3() {
+    const p = parseFloat(s3P.value);
+    let v = computeSigVoltage(p);
+    let statusText = 'NORMAL';
+    let faultTitle = '', faultDesc = '';
+
+    // Sensor resistance calculation — treat the pot as a fixed 5kΩ total element
+    // R_lower is the wiper-to-ground portion of the fixed 5kΩ pot element.
+    // Display wiper-to-ground resistance because it directly tracks the signal voltage.
+    const R_TOTAL = 5000;
+    const R_lower = (p/100) * R_TOTAL;
+
+    clearAllS3();
+
+    if (s3Scenario === 'normal') {
+      // Current flows from 5V rail (ECM right) out pin 50 -> LG/R (right to left) -> sensor C -> through full pot element -> sensor A -> BK/LG (left to right) -> pin 49 -> sensor ground inside ECM
+      // s3Ecm5vLine: x1=390 to x2=615. Current flows x2(5V label right) -> x1(pin) = REVERSE
+      s3Ecm5vLine.classList.add('active-rev');
+      // s3Wire5v: x1=180 (sensor) to x2=360 (ECM). Current ECM->sensor = x2->x1 = REVERSE
+      s3Wire5v.classList.add('active-rev');
+      // Signal wire is a high-impedance voltage tap, not the load-current path.
+      s3WireSig.classList.add('sense');
+      s3EcmSigLine.classList.add('sense');
+      // Ground: sensor A -> pin 49 -> sensor ground rail
+      // s3WireGnd: x1=180 to x2=360. Sensor->ECM = FORWARD
+      s3WireGnd.classList.add('active-fwd');
+      // s3EcmGndLine: x1=390 to x2=615. Pin 49 -> ground label = FORWARD
+      s3EcmGndLine.classList.add('active-fwd');
+      // Arrows
+      s3Arrow5v.classList.add('show');
+      s3ArrowSig.classList.add('show', 'sense');
+      s3ArrowGnd.classList.add('show');
+    } else if (s3Scenario === 'open-5v') {
+      v = 0.0;
+      statusText = 'FAULT · OPEN 5V';
+      s3Markers['open-5v'].classList.add('show');
+      s3Wire5v.classList.add('dead');
+      s3WireSig.classList.add('dead');
+      s3WireGnd.classList.add('dead');
+      faultTitle = 'Open on the LG/R 5V reference wire.';
+      faultDesc = 'Sensor loses 5V power. With no voltage across the pot element, the signal collapses to 0V. ECM reads minimum.';
+      renderHints(s3MeterHints, ['Pin 50: 0 V at sensor side', 'Signal: about 0.0 V', 'Next check: LG/R 5V ref continuity']);
+    } else if (s3Scenario === 'open-sig') {
+      v = 0.0;
+      statusText = 'FAULT · OPEN SIGNAL';
+      s3Markers['open-sig'].classList.add('show');
+      s3WireSig.classList.add('dead');
+      // 5V and ground still flowing through the pot (but no signal to ECM)
+      s3Ecm5vLine.classList.add('active-rev');
+      s3Wire5v.classList.add('active-rev');
+      s3WireGnd.classList.add('active-fwd');
+      s3EcmGndLine.classList.add('active-fwd');
+      s3Arrow5v.classList.add('show');
+      s3ArrowGnd.classList.add('show');
+      faultTitle = 'Open on the LG signal wire.';
+      faultDesc = 'Sensor still powered and working correctly, but the signal path to pin 33 is broken. ECM internal diagnostic pull-down drags the pin to 0V.';
+      renderHints(s3MeterHints, ['ECM pin 33: about 0.0 V', 'Sensor wiper: still varies', 'Next check: LG signal continuity']);
+    } else if (s3Scenario === 'open-rtn') {
+      v = 5.0;
+      statusText = 'FAULT · OPEN GROUND';
+      s3Markers['open-rtn'].classList.add('show');
+      s3WireGnd.classList.add('dead');
+      // No current flows because no return path. The powered side can still sit at 5V.
+      s3Wire5v.classList.add('voltage');
+      s3Ecm5vLine.classList.add('voltage');
+      s3WireSig.classList.add('voltage');
+      s3EcmSigLine.classList.add('voltage');
+      faultTitle = 'Open on the BK/LG sensor ground wire.';
+      faultDesc = 'No return path for current. With no current through the pot, no voltage drop develops across it. Signal floats up to 5V. Counterintuitive: the signal wire itself is fine, but reads maxed out.';
+      renderHints(s3MeterHints, ['ECM pin 33: about 5.0 V', 'Pin 49 return: open', 'Next check: BK/LG ground continuity']);
+    } else if (s3Scenario === 'short-5v') {
+      v = 5.0;
+      statusText = 'FAULT · SIG → 5V';
+      s3Markers['short-5v'].classList.add('show');
+      s3Ecm5vLine.classList.add('active-rev');
+      s3Wire5v.classList.add('active-rev');
+      s3WireGnd.classList.add('active-fwd');
+      s3EcmGndLine.classList.add('active-fwd');
+      s3WireSig.classList.add('voltage');
+      s3EcmSigLine.classList.add('voltage');
+      s3Arrow5v.classList.add('show');
+      s3ArrowGnd.classList.add('show');
+      faultTitle = 'Signal wire shorted to the 5V reference.';
+      faultDesc = 'Signal clamped to 5V regardless of sensor position. ECM reads full-scale.';
+      renderHints(s3MeterHints, ['ECM pin 33: about 5.0 V', 'Slider movement: no change', 'Next check: LG shorted to LG/R']);
+    } else if (s3Scenario === 'short-gnd') {
+      v = 0.0;
+      statusText = 'FAULT · SIG → GND';
+      s3Markers['short-gnd'].classList.add('show');
+      s3Ecm5vLine.classList.add('active-rev');
+      s3Wire5v.classList.add('active-rev');
+      s3WireGnd.classList.add('active-fwd');
+      s3EcmGndLine.classList.add('active-fwd');
+      s3WireSig.classList.add('dead');
+      s3EcmSigLine.classList.add('dead');
+      s3Arrow5v.classList.add('show');
+      s3ArrowGnd.classList.add('show');
+      faultTitle = 'Signal wire shorted to sensor ground.';
+      faultDesc = 'Signal clamped to 0V. ECM reads minimum.';
+      renderHints(s3MeterHints, ['ECM pin 33: about 0.0 V', 'Slider movement: no change', 'Next check: LG shorted to BK/LG/ground']);
+    }
+
+    s3PLabel.textContent = pctDesc(p);
+    s3Vsig.textContent = v.toFixed(2) + ' V';
+    s3VRead.textContent = v.toFixed(2) + ' V';
+    setVoltageHighlight(s3VsigBox, s3Vsig, s3VRead, s3Scenario !== 'normal');
+    // Show the lower resistance (wiper to ground) since that is what the divider uses for voltage.
+    s3Rsensor.textContent = (R_lower/1000).toFixed(2) + ' kΩ';
+    s3State.textContent = statusText;
+    if (statusText === 'NORMAL') {
+      s3State.style.color = 'var(--accent)';
+      s3State.style.borderColor = '#4da6ff44';
+      s3State.style.background = '#4da6ff22';
+    } else {
+      s3State.style.color = 'var(--red)';
+      s3State.style.borderColor = '#ff4d5e44';
+      s3State.style.background = '#ff4d5e22';
+    }
+
+    if (s3Scenario === 'normal') {
+      s3Card.classList.remove('faulted');
+      s3FaultCallout.classList.remove('show');
+    } else {
+      s3Card.classList.add('faulted');
+      s3FaultCallout.classList.add('show');
+      s3FaultTitle.textContent = faultTitle;
+      s3FaultDesc.textContent = faultDesc;
+    }
+  }
+
+  s3P.addEventListener('input', updateS3);
+  document.querySelectorAll('[data-s3]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-s3]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      s3Scenario = btn.dataset.s3;
+      updateS3();
+    });
+  });
+
+  updateS2();
+  updateS3();
+</script>
+
+</body>
+</html>

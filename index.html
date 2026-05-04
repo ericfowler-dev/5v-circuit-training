@@ -47,7 +47,16 @@
     align-items: flex-start;
     gap: 16px;
   }
-  .reset-all {
+  .header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .reset-all,
+  .help-open,
+  .help-close {
     flex: 0 0 auto;
     background: #4da6ff1a;
     border: 1px solid #4da6ff66;
@@ -60,10 +69,71 @@
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s, color 0.15s;
   }
-  .reset-all:hover {
+  .reset-all:hover,
+  .help-open:hover,
+  .help-close:hover {
     background: var(--accent);
     color: #0a0e1a;
     border-color: var(--accent);
+  }
+  .help-open {
+    background: #0a0e1a66;
+  }
+  .help-dialog {
+    width: min(760px, calc(100vw - 40px));
+    max-height: min(760px, calc(100vh - 40px));
+    margin: auto;
+    padding: 0;
+    border: 1px solid #4da6ff88;
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 24px 80px #000a, 0 0 0 1px #4da6ff22;
+  }
+  .help-dialog::backdrop {
+    background: #050812cc;
+    backdrop-filter: blur(3px);
+  }
+  .help-dialog-inner {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+  }
+  .help-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--grid);
+  }
+  .help-dialog h2 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+  .help-section {
+    display: grid;
+    gap: 10px;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .help-section h3 {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .help-section ul,
+  .help-section ol {
+    display: grid;
+    gap: 6px;
+    padding-left: 20px;
+  }
+  .help-section strong {
+    color: var(--text);
   }
   h1 {
     font-size: 22px;
@@ -579,7 +649,8 @@
   @media (max-width: 700px) {
     header { padding: 20px 18px 10px; }
     .header-top { flex-direction: column; }
-    .reset-all { width: 100%; }
+    .header-actions { width: 100%; }
+    .reset-all, .help-open { flex: 1 1 180px; }
     .legend { padding: 10px 18px; gap: 12px; }
     .container { padding: 16px 18px; overflow-x: auto; }
     .circuit-card { min-width: 640px; }
@@ -612,9 +683,55 @@
       <h1><span>5V</span> Sensor Circuits — 2-Wire vs 3-Wire</h1>
       <div class="subtitle">Directional current flow shown with moving dashes and arrows. Adjust the sensor value to watch the signal voltage track it. Click a fault scenario to see exactly where the break is and how current redistributes.</div>
     </div>
-    <button class="reset-all" id="resetAll" type="button">RESET BOTH CIRCUITS</button>
+    <div class="header-actions">
+      <button class="help-open" id="helpOpen" type="button" aria-haspopup="dialog">ABOUT / HOW TO</button>
+      <button class="reset-all" id="resetAll" type="button">RESET BOTH CIRCUITS</button>
+    </div>
   </div>
 </header>
+
+<dialog class="help-dialog" id="helpDialog" aria-labelledby="helpTitle">
+  <div class="help-dialog-inner">
+    <div class="help-dialog-header">
+      <h2 id="helpTitle">5V Sensor Circuit Training Tool</h2>
+      <button class="help-close" id="helpClose" type="button">CLOSE</button>
+    </div>
+
+    <section class="help-section">
+      <h3>What This Is</h3>
+      <p>This interactive training tool is designed for PSI engine products. It helps technicians and support teams understand how common 5 volt sensor circuits operate, how current flows through the circuit, and how wiring faults affect the signal the ECM receives.</p>
+      <p>The tool compares two common sensor circuit types:</p>
+      <ul>
+        <li><strong>2 wire thermistor circuits</strong>, such as coolant temperature and intake air temperature sensors.</li>
+        <li><strong>3 wire potentiometric or active sensor circuits</strong>, such as TPS, MAP, and fuel level sensors.</li>
+      </ul>
+      <p>Users can adjust the sensor input and immediately see how resistance, signal voltage, current flow, and ECM interpretation change.</p>
+    </section>
+
+    <section class="help-section">
+      <h3>Fault Demonstrations</h3>
+      <p>The tool can demonstrate common fault conditions, including open signal wires, open sensor grounds, signal shorts to ground, and signal shorts to 5 volts.</p>
+      <p>For each fault, the tool highlights the affected area of the circuit, shows the expected voltage reading, and explains how the ECM would likely interpret the condition.</p>
+    </section>
+
+    <section class="help-section">
+      <h3>How To Use It</h3>
+      <ol>
+        <li>Use the slider in each Live Controls panel to change the sensor input.</li>
+        <li>Watch the live resistance, signal voltage, ECM interpretation, and current-flow animation update.</li>
+        <li>Select a fault button inside the dashed Selectable Faults box to simulate a wiring failure.</li>
+        <li>Use the meter-test boxes to connect the visual fault to expected diagnostic readings.</li>
+        <li>Use Reset Both Circuits to return both examples to their normal baseline state.</li>
+      </ol>
+    </section>
+
+    <section class="help-section">
+      <h3>When To Use It</h3>
+      <p>This tool supports technician training, customer education, diagnostic walkthroughs, classroom demonstrations, and internal PSI support discussions. It provides a visual way to connect wiring behavior, meter readings, scan tool data, and ECM logic in one place.</p>
+      <p>Overall, the tool makes PSI sensor circuit diagnostics easier to see, explain, and troubleshoot.</p>
+    </section>
+  </div>
+</dialog>
 
 <div class="legend">
   <div class="legend-item"><div class="legend-swatch"></div>Circuit wire</div>
@@ -1021,6 +1138,22 @@
 
 <script>
   const resetAll = document.getElementById('resetAll');
+  const helpDialog = document.getElementById('helpDialog');
+  const helpOpen = document.getElementById('helpOpen');
+  const helpClose = document.getElementById('helpClose');
+
+  helpOpen.addEventListener('click', () => {
+    if (typeof helpDialog.showModal === 'function') {
+      helpDialog.showModal();
+    } else {
+      helpDialog.setAttribute('open', '');
+    }
+  });
+
+  helpClose.addEventListener('click', () => helpDialog.close());
+  helpDialog.addEventListener('click', event => {
+    if (event.target === helpDialog) helpDialog.close();
+  });
 
   // ================== 2-WIRE ==================
   const R25 = 2500, BETA = 3977, T25 = 298.15, R_PU = 2490;

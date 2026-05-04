@@ -41,6 +41,30 @@
     padding: 28px 32px 12px;
     border-bottom: 1px solid var(--grid);
   }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .reset-all {
+    flex: 0 0 auto;
+    background: #4da6ff1a;
+    border: 1px solid #4da6ff66;
+    color: var(--accent);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .reset-all:hover {
+    background: var(--accent);
+    color: #0a0e1a;
+    border-color: var(--accent);
+  }
   h1 {
     font-size: 22px;
     font-weight: 600;
@@ -115,9 +139,96 @@
     border: 1px solid #4da6ff44;
   }
   svg { display: block; width: 100%; height: auto; background: var(--panel-2); }
-  .controls {
-    padding: 16px 20px;
+  .control-panel {
+    margin: 14px 20px 12px;
+    padding: 12px;
+    border: 1px solid #4da6ff66;
+    border-radius: 8px;
+    background: #0a0e1acc;
+    box-shadow: inset 0 0 0 1px #4da6ff18, 0 0 18px #4da6ff12;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .control-panel.faulted {
+    border-color: #ff4d5e99;
+    background: #1a0c16e6;
+    box-shadow: inset 0 0 0 1px #ff4d5e22, 0 0 24px #ff4d5e22;
+  }
+  .control-panel-label {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    margin-bottom: 10px;
+    border: 1px solid #4da6ff44;
+    border-radius: 4px;
+    background: #4da6ff1a;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .control-panel.faulted .control-panel-label {
+    border-color: #ff4d5e55;
+    background: #ff4d5e22;
+    color: var(--red);
+  }
+  .control-panel + svg {
     border-top: 1px solid var(--grid);
+  }
+  .result-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid #3ddc8444;
+    border-radius: 6px;
+    background: #3ddc8412;
+    color: var(--text);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .result-strip.faulted {
+    border-color: #ff4d5e88;
+    background: #ff4d5e18;
+  }
+  .result-kicker {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ecm-badge {
+    min-width: 138px;
+    padding: 7px 9px;
+    border: 1px solid #4da6ff55;
+    border-radius: 4px;
+    background: #0a0e1a99;
+    color: var(--text-dim);
+    text-align: right;
+  }
+  .ecm-badge b {
+    display: block;
+    margin-top: 2px;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .result-strip.faulted .ecm-badge {
+    border-color: #ff4d5e66;
+  }
+  .result-strip.faulted .ecm-badge b {
+    color: var(--red);
+  }
+  .controls {
+    padding: 0;
+    border-top: 0;
     display: flex;
     gap: 16px;
     align-items: center;
@@ -255,6 +366,30 @@
     filter: drop-shadow(0 0 6px var(--red-glow));
     animation: pulse 1.2s ease-in-out infinite;
   }
+  .selected-fault-tag {
+    opacity: 0;
+    fill: var(--red);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-anchor: middle;
+    filter: drop-shadow(0 0 5px var(--red-glow));
+    transition: opacity 0.2s;
+    paint-order: stroke;
+    stroke: var(--panel-2);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  .selected-fault-tag.show { opacity: 1; }
+  .selected-fault-tag-bg {
+    opacity: 0;
+    fill: #2a0f18;
+    stroke: var(--red);
+    stroke-width: 1.25;
+    filter: drop-shadow(0 0 8px var(--red-glow));
+    transition: opacity 0.2s;
+  }
+  .selected-fault-tag-bg.show { opacity: 1; }
 
   /* Schematic text */
   .sch-label { font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif; font-size: 13px; fill: var(--text); }
@@ -332,9 +467,35 @@
   .scenario-row {
     display: flex;
     gap: 8px;
-    padding: 12px 20px;
-    border-top: 1px solid var(--grid);
+    padding: 12px 0 0;
+    margin-top: 12px;
+    border-top: 1px solid #4da6ff2e;
     flex-wrap: wrap;
+    align-items: center;
+  }
+  .fault-button-group {
+    position: relative;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 13px 10px 9px;
+    border: 1px dashed #ff4d5ecc;
+    border-radius: 5px;
+    background: #ff4d5e0a;
+  }
+  .fault-button-label {
+    position: absolute;
+    top: -9px;
+    left: 8px;
+    padding: 0 6px;
+    background: #0a0e1a;
+    color: var(--red);
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
   }
   .scenario-btn {
     background: transparent;
@@ -359,6 +520,35 @@
     background: var(--red);
     color: var(--text);
     border-color: var(--red);
+  }
+
+  .meter-tests {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #4da6ff2e;
+  }
+  .meter-test {
+    min-height: 50px;
+    border: 1px solid #4da6ff2e;
+    border-radius: 4px;
+    background: #0a0e1a80;
+    padding: 7px 8px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .meter-test b {
+    display: block;
+    margin-top: 4px;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .control-panel.faulted .meter-test {
+    border-color: #ff4d5e33;
   }
 
   .meter-hints {
@@ -388,10 +578,21 @@
 
   @media (max-width: 700px) {
     header { padding: 20px 18px 10px; }
+    .header-top { flex-direction: column; }
+    .reset-all { width: 100%; }
     .legend { padding: 10px 18px; gap: 12px; }
     .container { padding: 16px 18px; overflow-x: auto; }
     .circuit-card { min-width: 640px; }
     .meter-hints { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 1200px) {
+    .circuit-card { overflow: visible; }
+    .control-panel {
+      position: sticky;
+      top: 8px;
+      z-index: 5;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -406,8 +607,13 @@
 <body>
 
 <header>
-  <h1><span>5V</span> Sensor Circuits — 2-Wire vs 3-Wire</h1>
-  <div class="subtitle">Directional current flow shown with moving dashes and arrows. Adjust the sensor value to watch the signal voltage track it. Click a fault scenario to see exactly where the break is and how current redistributes.</div>
+  <div class="header-top">
+    <div>
+      <h1><span>5V</span> Sensor Circuits — 2-Wire vs 3-Wire</h1>
+      <div class="subtitle">Directional current flow shown with moving dashes and arrows. Adjust the sensor value to watch the signal voltage track it. Click a fault scenario to see exactly where the break is and how current redistributes.</div>
+    </div>
+    <button class="reset-all" id="resetAll" type="button">RESET BOTH CIRCUITS</button>
+  </div>
 </header>
 
 <div class="legend">
@@ -437,8 +643,48 @@
       <div class="state-badge" id="s2State">NORMAL</div>
     </div>
 
+    <div class="control-panel" aria-label="2-wire live controls">
+      <div class="control-panel-label">Live Controls</div>
+      <div class="result-strip" id="s2ResultStrip">
+        <div>
+          <span class="result-kicker">Fault Result</span>
+          <span id="s2ResultText">Normal voltage divider operation. Signal follows thermistor resistance.</span>
+        </div>
+        <div class="ecm-badge">ECM sees<b id="s2EcmSees">0.56 V / warm</b></div>
+      </div>
+      <div class="controls">
+        <div class="slider-group">
+          <label>Coolant Temperature <b id="s2TempLabel">80 °C</b></label>
+          <input type="range" id="s2Temp" min="-40" max="130" value="80" step="1">
+        </div>
+        <div class="readout">
+          <span>R<sub>NTC</sub>: <b id="s2RRead">313 Ω</b></span>
+          <span>V<sub>sig</sub>: <b class="sig" id="s2VRead">0.56 V</b></span>
+        </div>
+      </div>
+
+      <div class="scenario-row">
+        <button class="scenario-btn active" data-s2="normal">NORMAL</button>
+        <div class="fault-button-group" aria-label="Selectable 2-wire fault buttons">
+          <span class="fault-button-label">Selectable Faults</span>
+          <button class="scenario-btn fault" data-s2="open-sig">OPEN SIGNAL</button>
+          <button class="scenario-btn fault" data-s2="open-gnd">OPEN GROUND</button>
+          <button class="scenario-btn fault" data-s2="short-sig-gnd">SIG → GND</button>
+          <button class="scenario-btn fault" data-s2="short-sig-5v">SIG → 5V</button>
+          <button class="scenario-btn fault" data-s2="short-gnd-5v">GND → 5V</button>
+        </div>
+      </div>
+      <div class="meter-tests" id="s2MeterTests">
+        <div class="meter-test">Pin 32 to GND<b id="s2TestPin32">0.56 V</b></div>
+        <div class="meter-test">Pin 49 to GND<b id="s2TestPin49">0.00 V</b></div>
+        <div class="meter-test">Sensor A-B drop<b id="s2TestSensor">0.56 V</b></div>
+      </div>
+    </div>
+
     <!-- Taller viewBox to accommodate readout boxes ABOVE sensor and ECM -->
     <svg viewBox="0 0 640 400" id="s2Svg">
+      <rect class="selected-fault-tag-bg" id="s2SelectedFaultTagBg" x="236" y="86" width="168" height="20" rx="4"/>
+      <text class="selected-fault-tag" id="s2SelectedFaultTag" x="320" y="100">FAULT SELECTED</text>
 
       <!-- SENSOR RESISTANCE READOUT (above sensor, larger) -->
       <g>
@@ -572,26 +818,6 @@
       </g>
     </svg>
 
-    <div class="controls">
-      <div class="slider-group">
-        <label>Coolant Temperature <b id="s2TempLabel">80 °C</b></label>
-        <input type="range" id="s2Temp" min="-40" max="130" value="80" step="1">
-      </div>
-      <div class="readout">
-        <span>R<sub>NTC</sub>: <b id="s2RRead">313 Ω</b></span>
-        <span>V<sub>sig</sub>: <b class="sig" id="s2VRead">0.56 V</b></span>
-      </div>
-    </div>
-
-    <div class="scenario-row">
-      <button class="scenario-btn active" data-s2="normal">NORMAL</button>
-      <button class="scenario-btn fault" data-s2="open-sig">OPEN SIGNAL</button>
-      <button class="scenario-btn fault" data-s2="open-gnd">OPEN GROUND</button>
-      <button class="scenario-btn fault" data-s2="short-sig-gnd">SIG → GND</button>
-      <button class="scenario-btn fault" data-s2="short-sig-5v">SIG → 5V</button>
-      <button class="scenario-btn fault" data-s2="short-gnd-5v">GND → 5V</button>
-    </div>
-
     <div class="explain">
       <strong>Architecture:</strong> The thermistor forms a voltage divider with an internal ECM pull-up resistor tied to 5V. The TAN wire (pin 32) carries <em>both</em> the supply current and the signal voltage — the ECM reads the divided voltage at this node. The GY/R wire (pin 49) is the dedicated sensor return.
       <br><br>
@@ -612,7 +838,46 @@
       <div class="state-badge" id="s3State">NORMAL</div>
     </div>
 
+    <div class="control-panel" aria-label="3-wire live controls">
+      <div class="control-panel-label">Live Controls</div>
+      <div class="result-strip" id="s3ResultStrip">
+        <div>
+          <span class="result-kicker">Fault Result</span>
+          <span id="s3ResultText">Normal 5V reference, signal, and sensor-ground operation. Signal tracks input position.</span>
+        </div>
+        <div class="ecm-badge">ECM sees<b id="s3EcmSees">2.50 V / mid</b></div>
+      </div>
+      <div class="controls">
+        <div class="slider-group">
+          <label>Sensor Input <b id="s3PLabel">50% (mid-travel)</b></label>
+          <input type="range" id="s3Pressure" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="readout">
+          <span>V<sub>sig</sub>: <b class="sig" id="s3VRead">2.50 V</b></span>
+        </div>
+      </div>
+
+      <div class="scenario-row">
+        <button class="scenario-btn active" data-s3="normal">NORMAL</button>
+        <div class="fault-button-group" aria-label="Selectable 3-wire fault buttons">
+          <span class="fault-button-label">Selectable Faults</span>
+          <button class="scenario-btn fault" data-s3="open-5v">OPEN 5V</button>
+          <button class="scenario-btn fault" data-s3="open-sig">OPEN SIGNAL</button>
+          <button class="scenario-btn fault" data-s3="open-rtn">OPEN GROUND</button>
+          <button class="scenario-btn fault" data-s3="short-5v">SIG → 5V</button>
+          <button class="scenario-btn fault" data-s3="short-gnd">SIG → GND</button>
+        </div>
+      </div>
+      <div class="meter-tests" id="s3MeterTests">
+        <div class="meter-test">Pin 50 to GND<b id="s3TestPin50">5.00 V</b></div>
+        <div class="meter-test">Pin 33 to GND<b id="s3TestPin33">2.50 V</b></div>
+        <div class="meter-test">Pin 49 to GND<b id="s3TestPin49">0.00 V</b></div>
+      </div>
+    </div>
+
     <svg viewBox="0 0 640 430" id="s3Svg">
+      <rect class="selected-fault-tag-bg" id="s3SelectedFaultTagBg" x="236" y="86" width="168" height="20" rx="4"/>
+      <text class="selected-fault-tag" id="s3SelectedFaultTag" x="320" y="100">FAULT SELECTED</text>
 
       <!-- SENSOR RESISTANCE READOUT (above sensor) -->
       <g>
@@ -738,25 +1003,6 @@
       </g>
     </svg>
 
-    <div class="controls">
-      <div class="slider-group">
-        <label>Sensor Input <b id="s3PLabel">50% (mid-travel)</b></label>
-        <input type="range" id="s3Pressure" min="0" max="100" value="50" step="1">
-      </div>
-      <div class="readout">
-        <span>V<sub>sig</sub>: <b class="sig" id="s3VRead">2.50 V</b></span>
-      </div>
-    </div>
-
-    <div class="scenario-row">
-      <button class="scenario-btn active" data-s3="normal">NORMAL</button>
-      <button class="scenario-btn fault" data-s3="open-5v">OPEN 5V</button>
-      <button class="scenario-btn fault" data-s3="open-sig">OPEN SIGNAL</button>
-      <button class="scenario-btn fault" data-s3="open-rtn">OPEN GROUND</button>
-      <button class="scenario-btn fault" data-s3="short-5v">SIG → 5V</button>
-      <button class="scenario-btn fault" data-s3="short-gnd">SIG → GND</button>
-    </div>
-
     <div class="explain">
       <strong>Architecture:</strong> Three dedicated wires — LG/R (5V reference, pin 50), LG (signal out, pin 33), and BK/LG (sensor ground, pin 49). The sensor is a potentiometer with a wiper. Supply current flows <em>through</em> the full resistive element from pin 50 to pin 49; the signal wire on pin 33 is a high-impedance voltage tap at the wiper position — the ECM draws almost no current on it.
       <br><br>
@@ -774,6 +1020,8 @@
 </div>
 
 <script>
+  const resetAll = document.getElementById('resetAll');
+
   // ================== 2-WIRE ==================
   const R25 = 2500, BETA = 3977, T25 = 298.15, R_PU = 2490;
 
@@ -786,6 +1034,15 @@
   const s2VRead = document.getElementById('s2VRead');
   const s2State = document.getElementById('s2State');
   const s2Card = document.getElementById('s2Card');
+  const s2ControlPanel = s2Temp.closest('.control-panel');
+  const s2ResultStrip = document.getElementById('s2ResultStrip');
+  const s2ResultText = document.getElementById('s2ResultText');
+  const s2EcmSees = document.getElementById('s2EcmSees');
+  const s2SelectedFaultTagBg = document.getElementById('s2SelectedFaultTagBg');
+  const s2SelectedFaultTag = document.getElementById('s2SelectedFaultTag');
+  const s2TestPin32 = document.getElementById('s2TestPin32');
+  const s2TestPin49 = document.getElementById('s2TestPin49');
+  const s2TestSensor = document.getElementById('s2TestSensor');
 
   // Wires
   const s2WireTanSensor = document.getElementById('s2WireTanSensor');
@@ -843,6 +1100,25 @@
     }));
   }
 
+  function setResult(strip, textEl, ecmEl, text, ecmText, isFault) {
+    textEl.textContent = text;
+    ecmEl.textContent = ecmText;
+    strip.classList.toggle('faulted', isFault);
+  }
+
+  function setFaultTag(tag, bg, text) {
+    tag.textContent = text;
+    tag.classList.toggle('show', Boolean(text));
+    bg.classList.toggle('show', Boolean(text));
+  }
+
+  function tempInterpretation(tempC) {
+    if (tempC < 0) return 'very cold';
+    if (tempC < 55) return 'cool';
+    if (tempC < 95) return 'warm';
+    return 'hot';
+  }
+
   function setVoltageHighlight(box, svgValue, inlineValue, shouldHighlight) {
     [box, svgValue, inlineValue].forEach(el => {
       el.classList.toggle('fault-highlight', shouldHighlight);
@@ -865,6 +1141,8 @@
       w.classList.remove('dead', 'active-fwd', 'active-rev', 'voltage', 'sense');
     });
     [s2ArrowTan, s2ArrowGyr, s2ArrowEcm, s2ArrowEcmGnd].forEach(a => a.classList.remove('show', 'sense'));
+    s2SelectedFaultTag.classList.remove('show');
+    s2SelectedFaultTagBg.classList.remove('show');
     renderHints(s2MeterHints, []);
   }
 
@@ -874,11 +1152,20 @@
     let v;
     let statusText = 'NORMAL';
     let faultTitle = '', faultDesc = '';
+    let resultText = '';
+    let ecmText = '';
+    let faultTag = '';
+    let meterPin32 = '', meterPin49 = '', meterSensor = '';
 
     clearAllS2();
 
     if (s2Scenario === 'normal') {
       v = 5 * r / (r + R_PU);
+      resultText = `Normal divider operation. Signal is ${v.toFixed(2)} V and follows ${formatR(r)} thermistor resistance.`;
+      ecmText = `${v.toFixed(2)} V / ${tempInterpretation(t)}`;
+      meterPin32 = `${v.toFixed(2)} V`;
+      meterPin49 = '0.00 V';
+      meterSensor = `${v.toFixed(2)} V`;
       // Current flows: 5V rail -> pullup -> pin 32 -> TAN (right to left) -> thermistor -> GY/R (left to right) -> pin 49 -> sensor ground
       // Stroke s2EcmSig: x1=390 (pin) to x2=500 (pullup). Current flows pullup->pin = x2->x1 = REVERSE
       s2EcmSig.classList.add('active-rev');
@@ -905,6 +1192,12 @@
       addClassTo([s2WireTanOpenToShort, s2WireTanShortTo5v, s2WireTanEcm, s2EcmSig, s2EcmR, s2EcmTo5v, ...s2SignalSense], 'voltage');
       faultTitle = 'Open circuit on the TAN signal wire.';
       faultDesc = 'No current path through the thermistor. The ECM pull-up drags pin 32 to +5V. ECM reads minimum temperature.';
+      resultText = 'Signal reads 5.00 V. ECM interprets minimum temperature because the signal path is open.';
+      ecmText = '5.00 V / min temp';
+      faultTag = 'SELECTED: OPEN SIGNAL';
+      meterPin32 = '5.00 V';
+      meterPin49 = '0.00 V';
+      meterSensor = '0.00 V';
       renderHints(s2MeterHints, ['ECM pin 32: about 5.0 V', 'Scan symptom: very cold/min temp', 'Next check: continuity on TAN']);
     } else if (s2Scenario === 'open-gnd') {
       v = 5.0;
@@ -916,6 +1209,12 @@
       addClassTo([s2EcmSig, s2EcmR, s2EcmTo5v, ...s2SignalSense], 'voltage');
       faultTitle = 'Open circuit on the GY/R sensor return wire.';
       faultDesc = 'No return path for current, so no voltage drop across the pull-up. The ECM sees the full 5V. Reads minimum temperature — looks identical to an open signal wire at pin 32.';
+      resultText = 'Signal reads 5.00 V. ECM interprets minimum temperature because the return path is open.';
+      ecmText = '5.00 V / min temp';
+      faultTag = 'SELECTED: OPEN GROUND';
+      meterPin32 = '5.00 V';
+      meterPin49 = '0.00 V ECM side';
+      meterSensor = '0.00 V';
       renderHints(s2MeterHints, ['ECM pin 32: about 5.0 V', 'Sensor return: open to ECM ground', 'Next check: voltage drop/continuity on GY/R']);
     } else if (s2Scenario === 'short-sig-gnd') {
       v = 0.0;
@@ -934,6 +1233,12 @@
       s2ArrowEcmGnd.classList.add('show');
       faultTitle = 'Signal wire shorted to sensor ground.';
       faultDesc = 'Signal forced to 0V regardless of thermistor resistance. ECM reads maximum temperature. Current still flows through the pull-up, just bypasses the sensor.';
+      resultText = 'Signal reads 0.00 V. ECM interprets maximum temperature because the signal is shorted to ground.';
+      ecmText = '0.00 V / max temp';
+      faultTag = 'SELECTED: SIG TO GND';
+      meterPin32 = '0.00 V';
+      meterPin49 = '0.00 V';
+      meterSensor = '0.00 V';
       renderHints(s2MeterHints, ['ECM pin 32: about 0.0 V', 'Scan symptom: hot/max temp', 'Next check: TAN shorted to GY/R/ground']);
     } else if (s2Scenario === 'short-sig-5v') {
       v = 5.0;
@@ -949,6 +1254,12 @@
       s2ArrowEcmGnd.classList.add('show');
       faultTitle = 'Signal wire shorted to +5V reference.';
       faultDesc = 'Signal locked at 5V. ECM reads minimum temperature. If the short is to a low-impedance 5V source, current can still flow through the thermistor and return wire while bypassing the ECM pull-up.';
+      resultText = 'Signal reads 5.00 V. ECM interprets minimum temperature because the signal is clamped to 5V.';
+      ecmText = '5.00 V / min temp';
+      faultTag = 'SELECTED: SIG TO 5V';
+      meterPin32 = '5.00 V';
+      meterPin49 = '0.00 V';
+      meterSensor = '5.00 V';
       renderHints(s2MeterHints, ['ECM pin 32: about 5.0 V', 'Unplugged TAN: still 5.0 V', 'Next check: TAN shorted to 5V ref']);
     } else if (s2Scenario === 'short-gnd-5v') {
       statusText = 'FAULT · GND → 5V';
@@ -962,6 +1273,12 @@
       addClassTo([...s2TanSegments, ...s2GyrSegments, s2EcmSig, s2EcmR, s2EcmTo5v, s2EcmGnd, ...s2SignalSense], 'voltage');
       faultTitle = 'Sensor ground wire shorted to +5V reference.';
       faultDesc = 'Both ends of the sensor are now at 5V. No voltage across the thermistor, no current flow. Signal sits at 5V. ECM reads minimum temperature. This is a more severe harness fault that often affects other sensors sharing the same 5V rail — watch for multiple DTCs setting simultaneously.';
+      resultText = 'Signal reads 5.00 V. ECM interprets minimum temperature and the return wire is incorrectly at 5V.';
+      ecmText = '5.00 V / min temp';
+      faultTag = 'SELECTED: GND TO 5V';
+      meterPin32 = '5.00 V';
+      meterPin49 = '5.00 V';
+      meterSensor = '0.00 V';
       renderHints(s2MeterHints, ['Pin 49 return: about 5.0 V', 'Multiple 5V sensors may fail', 'Next check: GY/R shorted to 5V ref']);
     }
 
@@ -971,6 +1288,12 @@
     s2Vsig.textContent = v.toFixed(2) + ' V';
     s2VRead.textContent = v.toFixed(2) + ' V';
     setVoltageHighlight(s2VsigBox, s2Vsig, s2VRead, s2Scenario !== 'normal');
+    setResult(s2ResultStrip, s2ResultText, s2EcmSees, resultText, ecmText, s2Scenario !== 'normal');
+    setFaultTag(s2SelectedFaultTag, s2SelectedFaultTagBg, faultTag);
+    s2ControlPanel.classList.toggle('faulted', s2Scenario !== 'normal');
+    s2TestPin32.textContent = meterPin32;
+    s2TestPin49.textContent = meterPin49;
+    s2TestSensor.textContent = meterSensor;
     s2State.textContent = statusText;
     if (statusText === 'NORMAL') {
       s2State.style.color = 'var(--accent)';
@@ -1012,6 +1335,15 @@
   const s3Rsensor = document.getElementById('s3Rsensor');
   const s3State = document.getElementById('s3State');
   const s3Card = document.getElementById('s3Card');
+  const s3ControlPanel = s3P.closest('.control-panel');
+  const s3ResultStrip = document.getElementById('s3ResultStrip');
+  const s3ResultText = document.getElementById('s3ResultText');
+  const s3EcmSees = document.getElementById('s3EcmSees');
+  const s3SelectedFaultTagBg = document.getElementById('s3SelectedFaultTagBg');
+  const s3SelectedFaultTag = document.getElementById('s3SelectedFaultTag');
+  const s3TestPin50 = document.getElementById('s3TestPin50');
+  const s3TestPin33 = document.getElementById('s3TestPin33');
+  const s3TestPin49 = document.getElementById('s3TestPin49');
 
   const s3Wire5v = document.getElementById('s3Wire5v');
   const s3WireSig = document.getElementById('s3WireSig');
@@ -1051,12 +1383,22 @@
     return p + '% (full scale)';
   }
 
+  function inputInterpretation(p) {
+    if (p < 15) return 'low input';
+    if (p < 40) return 'light input';
+    if (p < 70) return 'mid input';
+    if (p < 90) return 'high input';
+    return 'full input';
+  }
+
   function clearAllS3() {
     Object.values(s3Markers).forEach(m => m.classList.remove('show'));
     [s3Wire5v, s3WireSig, s3WireGnd, s3Ecm5vLine, s3EcmSigLine, s3EcmGndLine].forEach(w => {
       w.classList.remove('dead', 'active-fwd', 'active-rev', 'voltage', 'sense');
     });
     [s3Arrow5v, s3ArrowSig, s3ArrowGnd].forEach(a => a.classList.remove('show', 'sense'));
+    s3SelectedFaultTag.classList.remove('show');
+    s3SelectedFaultTagBg.classList.remove('show');
     renderHints(s3MeterHints, []);
   }
 
@@ -1065,6 +1407,10 @@
     let v = computeSigVoltage(p);
     let statusText = 'NORMAL';
     let faultTitle = '', faultDesc = '';
+    let resultText = '';
+    let ecmText = '';
+    let faultTag = '';
+    let meterPin50 = '', meterPin33 = '', meterPin49 = '';
 
     // Sensor resistance calculation — treat the pot as a fixed 5kΩ total element
     // R_lower is the wiper-to-ground portion of the fixed 5kΩ pot element.
@@ -1075,6 +1421,11 @@
     clearAllS3();
 
     if (s3Scenario === 'normal') {
+      resultText = `Normal 5V reference, signal, and ground. Signal is ${v.toFixed(2)} V and tracks sensor position.`;
+      ecmText = `${v.toFixed(2)} V / ${inputInterpretation(p)}`;
+      meterPin50 = '5.00 V';
+      meterPin33 = `${v.toFixed(2)} V`;
+      meterPin49 = '0.00 V';
       // Current flows from 5V rail (ECM right) out pin 50 -> LG/R (right to left) -> sensor C -> through full pot element -> sensor A -> BK/LG (left to right) -> pin 49 -> sensor ground inside ECM
       // s3Ecm5vLine: x1=390 to x2=615. Current flows x2(5V label right) -> x1(pin) = REVERSE
       s3Ecm5vLine.classList.add('active-rev');
@@ -1101,6 +1452,12 @@
       s3WireGnd.classList.add('dead');
       faultTitle = 'Open on the LG/R 5V reference wire.';
       faultDesc = 'Sensor loses 5V power. With no voltage across the pot element, the signal collapses to 0V. ECM reads minimum.';
+      resultText = 'Signal reads 0.00 V. ECM interprets minimum input because the sensor lost its 5V feed.';
+      ecmText = '0.00 V / minimum';
+      faultTag = 'SELECTED: OPEN 5V';
+      meterPin50 = '0 V sensor side';
+      meterPin33 = '0.00 V';
+      meterPin49 = '0.00 V';
       renderHints(s3MeterHints, ['Pin 50: 0 V at sensor side', 'Signal: about 0.0 V', 'Next check: LG/R 5V ref continuity']);
     } else if (s3Scenario === 'open-sig') {
       v = 0.0;
@@ -1116,6 +1473,12 @@
       s3ArrowGnd.classList.add('show');
       faultTitle = 'Open on the LG signal wire.';
       faultDesc = 'Sensor still powered and working correctly, but the signal path to pin 33 is broken. ECM internal diagnostic pull-down drags the pin to 0V.';
+      resultText = 'ECM signal reads 0.00 V even though the sensor wiper may still vary. The signal wire is open.';
+      ecmText = '0.00 V / minimum';
+      faultTag = 'SELECTED: OPEN SIGNAL';
+      meterPin50 = '5.00 V';
+      meterPin33 = '0.00 V ECM';
+      meterPin49 = '0.00 V';
       renderHints(s3MeterHints, ['ECM pin 33: about 0.0 V', 'Sensor wiper: still varies', 'Next check: LG signal continuity']);
     } else if (s3Scenario === 'open-rtn') {
       v = 5.0;
@@ -1129,6 +1492,12 @@
       s3EcmSigLine.classList.add('voltage');
       faultTitle = 'Open on the BK/LG sensor ground wire.';
       faultDesc = 'No return path for current. With no current through the pot, no voltage drop develops across it. Signal floats up to 5V. Counterintuitive: the signal wire itself is fine, but reads maxed out.';
+      resultText = 'Signal reads 5.00 V. ECM interprets maximum input because the sensor ground return is open.';
+      ecmText = '5.00 V / maximum';
+      faultTag = 'SELECTED: OPEN GROUND';
+      meterPin50 = '5.00 V';
+      meterPin33 = '5.00 V';
+      meterPin49 = 'open return';
       renderHints(s3MeterHints, ['ECM pin 33: about 5.0 V', 'Pin 49 return: open', 'Next check: BK/LG ground continuity']);
     } else if (s3Scenario === 'short-5v') {
       v = 5.0;
@@ -1144,6 +1513,12 @@
       s3ArrowGnd.classList.add('show');
       faultTitle = 'Signal wire shorted to the 5V reference.';
       faultDesc = 'Signal clamped to 5V regardless of sensor position. ECM reads full-scale.';
+      resultText = 'Signal reads 5.00 V. ECM interprets full-scale input because the signal is shorted to 5V.';
+      ecmText = '5.00 V / maximum';
+      faultTag = 'SELECTED: SIG TO 5V';
+      meterPin50 = '5.00 V';
+      meterPin33 = '5.00 V';
+      meterPin49 = '0.00 V';
       renderHints(s3MeterHints, ['ECM pin 33: about 5.0 V', 'Slider movement: no change', 'Next check: LG shorted to LG/R']);
     } else if (s3Scenario === 'short-gnd') {
       v = 0.0;
@@ -1159,6 +1534,12 @@
       s3ArrowGnd.classList.add('show');
       faultTitle = 'Signal wire shorted to sensor ground.';
       faultDesc = 'Signal clamped to 0V. ECM reads minimum.';
+      resultText = 'Signal reads 0.00 V. ECM interprets minimum input because the signal is shorted to ground.';
+      ecmText = '0.00 V / minimum';
+      faultTag = 'SELECTED: SIG TO GND';
+      meterPin50 = '5.00 V';
+      meterPin33 = '0.00 V';
+      meterPin49 = '0.00 V';
       renderHints(s3MeterHints, ['ECM pin 33: about 0.0 V', 'Slider movement: no change', 'Next check: LG shorted to BK/LG/ground']);
     }
 
@@ -1166,6 +1547,12 @@
     s3Vsig.textContent = v.toFixed(2) + ' V';
     s3VRead.textContent = v.toFixed(2) + ' V';
     setVoltageHighlight(s3VsigBox, s3Vsig, s3VRead, s3Scenario !== 'normal');
+    setResult(s3ResultStrip, s3ResultText, s3EcmSees, resultText, ecmText, s3Scenario !== 'normal');
+    setFaultTag(s3SelectedFaultTag, s3SelectedFaultTagBg, faultTag);
+    s3ControlPanel.classList.toggle('faulted', s3Scenario !== 'normal');
+    s3TestPin50.textContent = meterPin50;
+    s3TestPin33.textContent = meterPin33;
+    s3TestPin49.textContent = meterPin49;
     // Show the lower resistance (wiper to ground) since that is what the divider uses for voltage.
     s3Rsensor.textContent = (R_lower/1000).toFixed(2) + ' kΩ';
     s3State.textContent = statusText;
@@ -1198,6 +1585,21 @@
       s3Scenario = btn.dataset.s3;
       updateS3();
     });
+  });
+
+  resetAll.addEventListener('click', () => {
+    s2Scenario = 'normal';
+    s3Scenario = 'normal';
+    s2Temp.value = 80;
+    s3P.value = 50;
+    document.querySelectorAll('[data-s2]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.s2 === 'normal');
+    });
+    document.querySelectorAll('[data-s3]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.s3 === 'normal');
+    });
+    updateS2();
+    updateS3();
   });
 
   updateS2();
